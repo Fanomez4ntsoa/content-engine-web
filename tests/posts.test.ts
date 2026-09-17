@@ -5,6 +5,7 @@ import { classifySearchError } from '@/lib/threads/errors'
 describe('formatTimestamp', () => {
   it.each([
     ['2026-09-17T10:15:30+0000', '2026-09-17T10:15:30.000Z', '17 Sep 2026, 10:15 UTC'],
+    ['2026-09-17T10:17:17+0000', '2026-09-17T10:17:17.000Z', '17 Sep 2026, 10:17 UTC'],
     ['2026-01-05T09:05:00Z', '2026-01-05T09:05:00.000Z', '5 Jan 2026, 09:05 UTC'],
     ['2026-09-17T01:30:00+02:00', '2026-09-16T23:30:00.000Z', '16 Sep 2026, 23:30 UTC'],
     ['2026-12-31T22:00:00-0300', '2027-01-01T01:00:00.000Z', '1 Jan 2027, 01:00 UTC'],
@@ -25,6 +26,19 @@ describe('sanitizePermalink', () => {
   it('normalizes a valid Threads URL', () => {
     expect(sanitizePermalink('https://www.threads.com/@someone/post/ABC')).toBe('https://www.threads.com/@someone/post/ABC')
   })
+
+  it('accepts an @ in the path (real Meta permalink)', () => {
+    expect(sanitizePermalink('https://www.threads.com/@_voaryy/post/DdYoGTHCBYs')).toBe(
+      'https://www.threads.com/@_voaryy/post/DdYoGTHCBYs',
+    )
+  })
+
+  it.each(['https://user@www.threads.com/@someone', 'https://user:pass@threads.net/x', 'https://@threads.com/x'])(
+    'rejects userinfo before the host: %s',
+    (value) => {
+      expect(sanitizePermalink(value)).toBeUndefined()
+    },
+  )
 
   it.each([undefined, null, '', 'not a url', 'https://sub.threads.com/x', 'https://threads.com@evil.com/x', 'ftp://threads.com/x'])(
     'rejects %s',

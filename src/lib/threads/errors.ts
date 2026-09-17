@@ -30,14 +30,14 @@ export function classifySearchError(error: ThreadsError): UpstreamSearchErrorCod
 export const SEARCH_ERRORS: Record<SearchErrorCode, { status: number; message: string }> = {
   not_authenticated: { status: 401, message: 'Please log in with Threads.' },
   session_expired: { status: 401, message: 'Your session has expired. Please log in again.' },
-  forbidden_origin: { status: 403, message: 'This request was not allowed.' },
+  forbidden_origin: { status: 403, message: 'This request was not allowed. Reload the page and try again.' },
   unsupported_media_type: { status: 415, message: 'Unsupported request format.' },
   body_too_large: { status: 413, message: 'The request is too large.' },
   invalid_request: { status: 400, message: 'Invalid request.' },
   invalid_keyword: { status: 400, message: 'Invalid keyword.' },
   quota_exceeded: {
     status: 429,
-    message: 'The Threads search limit has been reached (2,200 searches per 24 hours). Please try again later.',
+    message: 'The daily search limit has been reached. Please try again later.',
   },
   permission_missing: {
     status: 403,

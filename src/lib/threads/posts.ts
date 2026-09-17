@@ -17,6 +17,10 @@ export function sanitizePermalink(value: unknown): string | undefined {
   }
   if (url.protocol !== 'https:' || !PERMALINK_HOSTS.has(url.hostname)) return undefined
   if (url.username || url.password || url.port) return undefined
+  // Userinfo vide (`https://@threads.com`) : invisible dans l'URL parsée, visible dans la chaîne brute.
+  // Seule la partie avant le chemin compte : un @ dans le chemin (/@username) est légitime.
+  const rawAuthority = /^[a-z][a-z0-9+.-]*:[\\/]*([^\\/?#]*)/i.exec(value)?.[1] ?? ''
+  if (rawAuthority.includes('@')) return undefined
   return url.toString()
 }
 
@@ -64,14 +68,17 @@ export const keywordSearchResponseSchema = z.object({ data: z.array(z.unknown())
  * (id, username ou date inexploitables) est ignoré ; un permalink hors
  * domaine est retiré sans masquer le post.
  */
-export function normalizePosts(data: readonly unknown[]): SearchPost[] {
+export function normalizePosts(data: readonly unknown[]): { posts: SearchPost[]; dropped: number } {
   const posts: SearchPost[] = []
+  let dropped = 0
   for (const item of data) {
     if (posts.length >= SEARCH_RESULT_LIMIT) break
     const parsed = rawPostSchema.safeParse(item)
-    if (!parsed.success) continue
-    const timestamp = formatTimestamp(parsed.data.timestamp)
-    if (!timestamp) continue
+    const timestamp = parsed.success ? formatTimestamp(parsed.data.timestamp) : undefined
+    if (!parsed.success || !timestamp) {
+      dropped += 1
+      continue
+    }
 
     const permalink = sanitizePermalink(parsed.data.permalink)
     const text = parsed.data.text === undefined || parsed.data.text.trim() === '' ? undefined : parsed.data.text
@@ -83,5 +90,5 @@ export function normalizePosts(data: readonly unknown[]): SearchPost[] {
       ...(permalink === undefined ? {} : { permalink }),
     })
   }
-  return posts
+  return { posts, dropped }
 }

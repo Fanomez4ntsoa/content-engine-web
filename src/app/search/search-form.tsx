@@ -2,15 +2,14 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
-import { KEYWORD_MAX_LENGTH, type SearchErrorBody, type SearchPost, type SearchSuccessBody } from '@/lib/search-types'
+import { KEYWORD_MAX_LENGTH, type SearchPost } from '@/lib/search-types'
+import { GENERIC_SEARCH_ERROR, interpretSearchResponse, type SearchOutcome } from './interpret-response'
 
 type State =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'done'; keyword: string; posts: SearchPost[] }
+  | { status: 'done'; posts: SearchPost[] }
   | { status: 'error'; message: string }
-
-const GENERIC_ERROR = 'The search could not be completed. Try again, or log out and log in again.'
 
 export function SearchForm() {
   const router = useRouter()
@@ -23,6 +22,7 @@ export function SearchForm() {
     if (loading) return
     setState({ status: 'loading' })
 
+    let outcome: SearchOutcome
     try {
       const response = await fetch('/api/search', {
         method: 'POST',
@@ -31,21 +31,22 @@ export function SearchForm() {
         credentials: 'same-origin',
         cache: 'no-store',
       })
-
-      // Session absente ou jeton expiré (190) : le serveur a déjà détruit la session.
-      if (response.status === 401) {
-        router.replace('/?login=expired')
-        return
-      }
-
-      const body = (await response.json()) as SearchSuccessBody | SearchErrorBody
-      if (!response.ok || 'error' in body) {
-        setState({ status: 'error', message: 'error' in body ? body.error.message : GENERIC_ERROR })
-        return
-      }
-      setState({ status: 'done', keyword: keyword.trim(), posts: body.posts })
+      const body: unknown = await response.json().catch(() => undefined)
+      outcome = interpretSearchResponse(response.status, body)
     } catch {
-      setState({ status: 'error', message: GENERIC_ERROR })
+      outcome = { kind: 'error', code: 'unexpected', message: GENERIC_SEARCH_ERROR }
+    }
+
+    switch (outcome.kind) {
+      case 'redirect':
+        // Session absente ou jeton expiré (190) : le serveur a déjà détruit la session.
+        router.replace(outcome.to)
+        return
+      case 'results':
+        setState({ status: 'done', posts: outcome.posts })
+        return
+      case 'error':
+        setState({ status: 'error', message: outcome.message })
     }
   }
 

@@ -37,7 +37,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     return searchErrorResponse(code)
   }
 
-  const payload: SearchSuccessBody = { posts: result.data }
+  const { posts, dropped } = result.data
+  if (posts.length === 0 && dropped > 0) logWarning({ event: 'posts_dropped', count: dropped })
+
+  const payload: SearchSuccessBody = { posts }
   return noStoreJson(payload)
 }
 

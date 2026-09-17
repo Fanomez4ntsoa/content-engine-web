@@ -159,7 +159,7 @@ export async function searchKeyword(
   accessToken: string,
   keyword: string,
   fetchImpl: FetchLike = fetch,
-): Promise<ThreadsResult<SearchPost[]>> {
+): Promise<ThreadsResult<{ posts: SearchPost[]; dropped: number }>> {
   const url = new URL(`${THREADS_GRAPH_ORIGIN}/${THREADS_API_VERSION}/keyword_search`)
   url.searchParams.set('q', keyword)
   url.searchParams.set('search_type', 'RECENT')

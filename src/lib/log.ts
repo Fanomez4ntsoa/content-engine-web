@@ -13,6 +13,8 @@ export type LogEvent =
   | { event: 'meta_callback_rejected'; route: 'uninstall' | 'delete'; reason: MetaCallbackFailure }
   | { event: 'oauth_callback_failed'; reason: OAuthFailureReason; error?: ThreadsError }
   | { event: 'search_failed'; code: UpstreamSearchErrorCode; error: ThreadsError }
+  /** Meta a renvoyé des posts mais aucun n'était affichable : le nombre seulement. */
+  | { event: 'posts_dropped'; count: number }
 
 export function logWarning(event: LogEvent): void {
   // eslint-disable-next-line no-console -- unique sortie de log de l'app, limitée aux événements typés ci-dessus.
