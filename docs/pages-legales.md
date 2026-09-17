@@ -106,7 +106,7 @@ When you remove the app from your Threads settings, Meta notifies the web app au
 
 ---
 
-## Notes pour la spec (Claude Code)
+## Notes d'implémentation
 
 - **Delete Callback URL** (`/api/threads/delete`) : Meta envoie un `signed_request` en POST. Il faut vérifier la signature avec le Threads App Secret, puis répondre en JSON : `{ "url": "[APP_URL]/data-deletion/status?code=XXX", "confirmation_code": "XXX" }`.
 - **Uninstall Callback URL** (`/api/threads/uninstall`) : même `signed_request`, il suffit de vérifier et de répondre `200`.

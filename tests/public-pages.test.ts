@@ -140,12 +140,61 @@ describe('legal pages match docs/pages-legales.md', () => {
 
   it.each([
     ['privacy', '## PAGE 1 — `/privacy`', '## PAGE 2', () => createElement(PrivacyPolicy, { appUrl: APP_URL })],
-    ['data deletion', '## PAGE 2 — `/data-deletion`', '## Notes pour la spec', () => createElement(DataDeletionInstructions, { appUrl: APP_URL })],
+    ['data deletion', '## PAGE 2 — `/data-deletion`', "## Notes d'implémentation", () => createElement(DataDeletionInstructions, { appUrl: APP_URL })],
   ])('renders every block of the %s page', (_label, start, end, element) => {
     const text = normalize(renderedText(renderToStaticMarkup(element())))
     const blocks = markdownBlocks(start, end)
     expect(blocks.length).toBeGreaterThan(10)
     for (const block of blocks) expect(text).toContain(normalize(block))
+  })
+})
+
+describe("docs/pages-legales.md implementation notes", () => {
+  const doc = readFileSync(new URL('../docs/pages-legales.md', import.meta.url), 'utf8')
+  const NOTES_HEADING = "## Notes d'implémentation"
+
+  // Phrases propres à la section de notes (absentes des textes publics).
+  const notesMarkers = ["Notes d'implémentation", 'Delete Callback URL', 'Uninstall Callback URL', 'La page de statut peut rester simple', 'collecteur local']
+
+  it('is the last section of the file and contains the expected markers', () => {
+    expect(doc.split('\n').filter((line) => line.startsWith('## Notes'))).toEqual([NOTES_HEADING])
+    const notes = doc.slice(doc.indexOf(NOTES_HEADING))
+    for (const marker of notesMarkers) expect(notes).toContain(marker)
+    expect(doc).not.toContain('Notes pour la spec')
+  })
+
+  it('is rendered on no public page', () => {
+    const rendered = [
+      renderToStaticMarkup(createElement(PrivacyPolicy, { appUrl: APP_URL })),
+      renderToStaticMarkup(createElement(DataDeletionInstructions, { appUrl: APP_URL })),
+      renderToStaticMarkup(createElement(DeletionStatus, { code: createConfirmationCode() })),
+      renderToStaticMarkup(createElement(DeletionStatus, { code: undefined })),
+    ]
+      .join('\n')
+      .replaceAll('&#x27;', "'")
+      .replaceAll('&quot;', '"')
+      .replaceAll('&amp;', '&')
+    for (const marker of notesMarkers) expect(rendered).not.toContain(marker)
+  })
+
+  it('is not read by any page, layout or component', () => {
+    const sources = [
+      'app/page.tsx',
+      'app/layout.tsx',
+      'app/search/page.tsx',
+      'app/search/search-form.tsx',
+      'app/privacy/page.tsx',
+      'app/data-deletion/page.tsx',
+      'app/data-deletion/status/page.tsx',
+      'components/legal/privacy-policy.tsx',
+      'components/legal/data-deletion-instructions.tsx',
+      'components/legal/deletion-status.tsx',
+    ].map((path) => readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8'))
+    for (const source of sources) {
+      // Les composants citent le fichier en commentaire ; ils ne doivent jamais le lire ni l'importer.
+      expect(source).not.toMatch(/(import|require|readFile\w*|fetch)\b[^\n]*pages-legales/)
+      for (const marker of notesMarkers) expect(source).not.toContain(marker)
+    }
   })
 })
 

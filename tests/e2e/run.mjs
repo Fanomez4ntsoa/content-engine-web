@@ -135,6 +135,11 @@ async function run() {
     const response = await page.goto(`${BASE}${path}`)
     check(`${path} : 200 sans session`, response.status() === 200, String(response.status()))
     check(`${path} : titre « ${title} »`, (await page.title()) === title, await page.title())
+    const visibleText = await page.locator('body').innerText()
+    check(
+      `${path} : notes d'implémentation absentes`,
+      !["Notes d'implémentation", 'Delete Callback URL', 'Uninstall Callback URL', 'collecteur local'].some((marker) => visibleText.includes(marker)),
+    )
     const footer = page.locator('footer.site-footer')
     check(
       `${path} : pied de page vers /privacy et /data-deletion`,

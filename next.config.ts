@@ -21,7 +21,7 @@ const contentSecurityPolicy = [
 ].join('; ')
 
 const nextConfig: NextConfig = {
-  // Empêche `next dev` de générer AGENTS.md / CLAUDE.md quand il détecte un agent de code.
+  // Empêche `next dev` de générer des fichiers d'instructions pour agents de code à la racine.
   agentRules: false,
   poweredByHeader: false,
   reactStrictMode: true,
