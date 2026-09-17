@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EnvError, parseEnv } from '@/lib/env'
+import { EnvError, parseAppUrl, parseEnv } from '@/lib/env'
 
 const valid = {
   THREADS_APP_ID: '1234567890',
@@ -64,5 +64,16 @@ describe('parseEnv', () => {
     const message = errorOf({ ...valid, SESSION_SECRET: 'short-secret', THREADS_APP_ID: 'abc' }).message
     expect(message).not.toContain('short-secret')
     expect(message).not.toContain(valid.THREADS_APP_SECRET)
+  })
+})
+
+describe('parseAppUrl', () => {
+  it('only needs APP_URL', () => {
+    expect(parseAppUrl({ APP_URL: 'https://cew.example.com/' })).toBe('https://cew.example.com')
+  })
+
+  it('rejects a missing or invalid APP_URL by name', () => {
+    expect(() => parseAppUrl({})).toThrow('APP_URL is required')
+    expect(() => parseAppUrl({ APP_URL: 'http://cew.example.com' })).toThrow(/APP_URL must use https/)
   })
 })

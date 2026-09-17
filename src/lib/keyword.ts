@@ -8,6 +8,8 @@ const CONTROL_CHARACTER = /\p{Cc}/u
 const keywordSchema = z
   .string({ error: 'Please enter a keyword.' })
   .trim()
+  // NFC : « é » saisi en un ou deux points de code donne la même recherche.
+  .normalize('NFC')
   .min(1, 'Please enter a keyword.')
   // Longueur en points de code, pour ne pas pénaliser les emojis.
   .refine((value) => [...value].length <= KEYWORD_MAX_LENGTH, {

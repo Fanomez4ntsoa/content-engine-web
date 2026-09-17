@@ -62,3 +62,25 @@ export function getEnv(): Env {
   cached ??= parseEnv(process.env)
   return cached
 }
+
+const appUrlSchema = z.object({ APP_URL: originUrl })
+
+/**
+ * Ne valide que APP_URL : pour les pages et réponses qui n'ont besoin
+ * d'aucun secret (pages légales, URL de statut de suppression).
+ */
+export function parseAppUrl(source: Record<string, string | undefined>): string {
+  const result = appUrlSchema.safeParse({ APP_URL: source.APP_URL })
+  if (result.success) return result.data.APP_URL
+
+  const issue = result.error.issues[0]
+  const message = !issue || issue.code === 'invalid_type' ? 'is required' : issue.message
+  throw new EnvError(`Invalid environment variables: APP_URL ${message}`)
+}
+
+let cachedAppUrl: string | undefined
+
+export function getAppUrl(): string {
+  cachedAppUrl ??= parseAppUrl(process.env)
+  return cachedAppUrl
+}
