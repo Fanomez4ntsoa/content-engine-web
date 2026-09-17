@@ -1,4 +1,5 @@
 import 'server-only'
+import type { EnvVariableName } from '@/lib/env'
 import type { MetaCallbackFailure } from '@/lib/meta-callback'
 import type { OAuthFailureReason } from '@/lib/oauth'
 import type { UpstreamSearchErrorCode } from '@/lib/threads/errors'
@@ -10,6 +11,7 @@ import type { ThreadsError } from '@/lib/threads/client'
  * un signed_request, un user_id ou un message renvoyé par Meta.
  */
 export type LogEvent =
+  | { event: 'env_invalid'; variables: readonly EnvVariableName[] }
   | { event: 'meta_callback_rejected'; route: 'uninstall' | 'delete'; reason: MetaCallbackFailure }
   | { event: 'oauth_callback_failed'; reason: OAuthFailureReason; error?: ThreadsError }
   | { event: 'search_failed'; code: UpstreamSearchErrorCode; error: ThreadsError }

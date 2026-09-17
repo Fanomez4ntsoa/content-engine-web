@@ -33,42 +33,52 @@ function check(label, ok, detail = '') {
 // Serveur
 // ---------------------------------------------------------------------------
 
-let serverLog = ''
-const server = spawn('node_modules/.bin/next', ['start', '-p', String(PORT)], {
-  detached: true,
-  stdio: ['ignore', 'pipe', 'pipe'],
-  env: {
-    ...process.env,
-    NEXT_TELEMETRY_DISABLED: '1',
-    THREADS_APP_ID: '1000000000',
-    THREADS_APP_SECRET: 'e2e-not-a-real-secret',
-    APP_URL: BASE,
-    THREADS_REDIRECT_URI: `${BASE}/api/auth/callback`,
-    SESSION_SECRET,
-  },
+/** Lance `next start` dans son propre groupe de processus ; `stop()` arrête next start et next-server. */
+function startServer(port, env) {
+  const base = `http://localhost:${port}`
+  let log = ''
+  const child = spawn('node_modules/.bin/next', ['start', '-p', String(port)], {
+    detached: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env: { PATH: process.env.PATH, HOME: process.env.HOME, NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', ...env },
+  })
+  child.stdout.on('data', (chunk) => (log += chunk))
+  child.stderr.on('data', (chunk) => (log += chunk))
+
+  return {
+    base,
+    log: () => log,
+    async stop() {
+      if (child.exitCode !== null) return
+      const exited = new Promise((resolve) => child.once('exit', resolve))
+      try {
+        process.kill(-child.pid, 'SIGTERM')
+      } catch {
+        return // déjà arrêté
+      }
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 5000))])
+    },
+    async ready() {
+      for (let attempt = 0; attempt < 120; attempt += 1) {
+        try {
+          await fetch(`${base}/privacy`, { redirect: 'manual' })
+          return
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 250))
+        }
+      }
+      throw new Error(`Server did not start on ${base}`)
+    },
+  }
+}
+
+const server = startServer(PORT, {
+  THREADS_APP_ID: '1000000000',
+  THREADS_APP_SECRET: 'e2e-not-a-real-secret',
+  APP_URL: BASE,
+  THREADS_REDIRECT_URI: `${BASE}/api/auth/callback`,
+  SESSION_SECRET,
 })
-server.stdout.on('data', (chunk) => (serverLog += chunk))
-server.stderr.on('data', (chunk) => (serverLog += chunk))
-
-function stopServer() {
-  try {
-    process.kill(-server.pid, 'SIGTERM') // groupe de processus : next start + next-server
-  } catch {
-    // déjà arrêté
-  }
-}
-
-async function waitForServer() {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    try {
-      await fetch(`${BASE}/privacy`, { redirect: 'manual' })
-      return
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 250))
-    }
-  }
-  throw new Error(`Server did not start on ${BASE}`)
-}
 
 async function sessionCookie() {
   const value = await sealData(
@@ -84,7 +94,7 @@ async function sessionCookie() {
 // ---------------------------------------------------------------------------
 
 async function run() {
-  await waitForServer()
+  await server.ready()
   const browser = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {})
   const context = await browser.newContext()
   const page = await context.newPage()
@@ -161,6 +171,13 @@ async function run() {
   await page.goto(`${BASE}/privacy`)
   check('/privacy : APP_URL injectée', (await page.locator('main').textContent()).includes(`Web app (${BASE})`) && !(await page.content()).includes('[APP_URL]'))
   await page.goto(`${BASE}/data-deletion`)
+  const permissionsLink = page.locator('main a[href="https://www.threads.com/settings/website_permissions"]')
+  check(
+    '/data-deletion : lien cliquable vers les autorisations Threads',
+    (await permissionsLink.count()) === 1 &&
+      (await permissionsLink.getAttribute('rel')) === 'noopener noreferrer' &&
+      (await permissionsLink.getAttribute('target')) === '_blank',
+  )
   check('/data-deletion : URL de statut avec APP_URL', (await page.locator('main code').textContent()) === `${BASE}/data-deletion/status?code=YOUR_CONFIRMATION_CODE`)
 
   const validCode = randomBytes(16).toString('hex')
@@ -291,9 +308,50 @@ async function run() {
   check('aucune erreur console', consoleErrors.length === 0, consoleErrors.join(' | '))
   check('aucune ressource en erreur', failedResources.length === 0, failedResources.join(' | '))
   check('aucune ressource externe chargée', externalRequests.length === 0, externalRequests.join(' | '))
-  check('logs serveur sans jeton ni mot-clé', !serverLog.includes(FAKE_TOKEN) && !serverLog.includes(REAL_CALL_KEYWORD))
+  check('logs serveur sans jeton ni mot-clé', !server.log().includes(FAKE_TOKEN) && !server.log().includes(REAL_CALL_KEYWORD))
+  check('aucun env_invalid avec une configuration complète', !server.log().includes('env_invalid'))
 
   await browser.close()
+}
+
+// ---------------------------------------------------------------------------
+// Configuration incomplète : seule APP_URL est valide
+// ---------------------------------------------------------------------------
+
+async function runWithPartialConfig() {
+  const port = PORT + 1
+  const base = `http://localhost:${port}`
+  const invalidSecret = 'too-short-secret-e2e'
+  const partial = startServer(port, { APP_URL: base, SESSION_SECRET: invalidSecret })
+  try {
+    await partial.ready()
+    for (const path of ['/privacy', '/data-deletion', `/data-deletion/status?code=${randomBytes(16).toString('hex')}`]) {
+      const response = await fetch(`${base}${path}`)
+      check(`config partielle : ${path.split('?')[0]} en 200`, response.status === 200, String(response.status))
+    }
+    // React sépare les nœuds de texte par <!-- --> dans le HTML serveur.
+    const privacy = (await (await fetch(`${base}/privacy`)).text()).replaceAll('<!-- -->', '')
+    check('config partielle : APP_URL injectée dans /privacy', privacy.includes(`Web app (${base})`))
+
+    const search = await fetch(`${base}/api/search`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base },
+      body: JSON.stringify({ keyword: 'phone' }),
+    })
+    check('config partielle : /api/search reste strict (500)', search.status === 500, String(search.status))
+    const login = await fetch(`${base}/api/auth/login`, { redirect: 'manual' })
+    check('config partielle : /api/auth/login reste strict (500)', login.status === 500, String(login.status))
+
+    const event = partial.log().split('\n').find((line) => line.includes('"event":"env_invalid"'))
+    check(
+      'config partielle : env_invalid loggé avec les noms seulement',
+      event === JSON.stringify({ event: 'env_invalid', variables: ['THREADS_APP_ID', 'THREADS_APP_SECRET', 'THREADS_REDIRECT_URI', 'SESSION_SECRET'] }),
+      event,
+    )
+    check('config partielle : aucune valeur de variable dans les logs', !partial.log().includes(invalidSecret))
+  } finally {
+    await partial.stop()
+  }
 }
 
 try {
@@ -302,7 +360,14 @@ try {
   results.push(false)
   out(`FAIL  exception : ${error instanceof Error ? error.message : String(error)}`)
 } finally {
-  stopServer()
+  await server.stop()
+}
+
+try {
+  await runWithPartialConfig()
+} catch (error) {
+  results.push(false)
+  out(`FAIL  exception (config partielle) : ${error instanceof Error ? error.message : String(error)}`)
 }
 
 const failed = results.filter((ok) => !ok).length

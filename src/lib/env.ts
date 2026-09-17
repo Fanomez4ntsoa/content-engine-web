@@ -1,5 +1,15 @@
 import { z } from 'zod'
 
+export const ENV_VARIABLES = [
+  'THREADS_APP_ID',
+  'THREADS_APP_SECRET',
+  'THREADS_REDIRECT_URI',
+  'APP_URL',
+  'SESSION_SECRET',
+] as const
+
+export type EnvVariableName = (typeof ENV_VARIABLES)[number]
+
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /** Origine seule (schéma + hôte + port), HTTPS obligatoire hors machine locale. */
@@ -31,6 +41,19 @@ export type Env = z.infer<typeof envSchema>
 
 export class EnvError extends Error {
   override name = 'EnvError'
+
+  /** Noms des variables fautives, sans jamais leurs valeurs. */
+  constructor(
+    message: string,
+    readonly variables: readonly EnvVariableName[],
+  ) {
+    super(message)
+  }
+}
+
+function variableNamesOf(issues: readonly { path: readonly PropertyKey[] }[]): EnvVariableName[] {
+  const names = new Set(issues.map((issue) => String(issue.path[0])))
+  return ENV_VARIABLES.filter((name) => names.has(name))
 }
 
 /**
@@ -52,7 +75,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
     const message = issue.code === 'invalid_type' ? 'is required' : issue.message
     return `${name} ${message}`
   })
-  throw new EnvError(`Invalid environment variables: ${details.join('; ')}`)
+  throw new EnvError(`Invalid environment variables: ${details.join('; ')}`, variableNamesOf(result.error.issues))
 }
 
 let cached: Env | undefined
@@ -75,7 +98,7 @@ export function parseAppUrl(source: Record<string, string | undefined>): string 
 
   const issue = result.error.issues[0]
   const message = !issue || issue.code === 'invalid_type' ? 'is required' : issue.message
-  throw new EnvError(`Invalid environment variables: APP_URL ${message}`)
+  throw new EnvError(`Invalid environment variables: APP_URL ${message}`, ['APP_URL'])
 }
 
 let cachedAppUrl: string | undefined
