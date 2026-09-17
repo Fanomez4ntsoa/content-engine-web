@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from '@/lib/session-server'
 import { SearchForm } from './search-form'
 
-export const metadata: Metadata = { title: 'Search — Content Engine Listening' }
+export const metadata: Metadata = { title: 'Search' }
 
 export default async function SearchPage() {
   // Protection vérifiée ici, dans la page elle-même.

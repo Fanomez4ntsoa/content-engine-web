@@ -62,7 +62,7 @@ export function metaCallbackOptions(): Response {
   return noStoreEmpty(204, { Allow: [...META_CALLBACK_ALLOWED_METHODS, 'OPTIONS'].join(', ') })
 }
 
-/** 16 octets aléatoires en hexadécimal. Non stocké : rien n'est à supprimer côté web. */
+/** 16 octets aléatoires en hexadécimal (format vérifié par isConfirmationCode). Non stocké : rien n'est à supprimer côté web. */
 export function createConfirmationCode(): string {
   return randomBytes(16).toString('hex')
 }

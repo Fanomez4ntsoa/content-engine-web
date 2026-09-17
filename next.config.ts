@@ -42,6 +42,10 @@ const nextConfig: NextConfig = {
         source: '/search',
         headers: [{ key: 'Cache-Control', value: 'no-store' }],
       },
+      {
+        source: '/data-deletion/status',
+        headers: [{ key: 'Cache-Control', value: 'no-store' }],
+      },
     ]
   },
 }

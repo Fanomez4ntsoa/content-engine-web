@@ -109,6 +109,73 @@ async function run() {
     )
   })
 
+  const externalRequests = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin !== BASE) externalRequests.push(request.url())
+  })
+
+  // --- Pages publiques, sans session
+  const publicPages = [
+    ['/', 'Content Engine Listening'],
+    ['/privacy', 'Privacy Policy — Content Engine Listening'],
+    ['/data-deletion', 'Data Deletion Instructions — Content Engine Listening'],
+    ['/data-deletion/status', 'Deletion Request Status — Content Engine Listening'],
+  ]
+  for (const [path, title] of publicPages) {
+    const response = await page.goto(`${BASE}${path}`)
+    check(`${path} : 200 sans session`, response.status() === 200, String(response.status()))
+    check(`${path} : titre « ${title} »`, (await page.title()) === title, await page.title())
+    const footer = page.locator('footer.site-footer')
+    check(
+      `${path} : pied de page vers /privacy et /data-deletion`,
+      (await footer.locator('a[href="/privacy"]').count()) === 1 && (await footer.locator('a[href="/data-deletion"]').count()) === 1,
+    )
+  }
+
+  await page.goto(`${BASE}/`)
+  check('accueil : bouton « Log in with Threads » vers /api/auth/login', (await page.getByRole('link', { name: 'Log in with Threads' }).getAttribute('href')) === '/api/auth/login')
+  const icon = await page.locator('link[rel="icon"]').first().getAttribute('href')
+  const iconResponse = await page.request.get(`${BASE}${icon}`)
+  check('favicon local servi', icon?.startsWith('/icon') && iconResponse.status() === 200 && iconResponse.headers()['content-type']?.includes('image/svg+xml'), `${icon} ${iconResponse.status()}`)
+
+  for (const [value, expected] of [
+    ['denied', 'Login was cancelled. No access was granted to the app.'],
+    ['failed', 'Login with Threads did not complete. Please try again.'],
+    ['expired', 'Your session has expired. Please log in again.'],
+  ]) {
+    await page.goto(`${BASE}/?login=${value}`)
+    check(`?login=${value} : message fixe`, (await page.getByRole('status').textContent()) === expected)
+  }
+  for (const value of ['bogus', encodeURIComponent('<b>injected</b>'), 'toString']) {
+    await page.goto(`${BASE}/?login=${value}`)
+    // Le HTML brut contient l'URL échappée dans les données du routeur Next (script JSON) :
+    // on vérifie ce qui est rendu (texte visible, éléments), pas la source.
+    check(
+      `?login=${decodeURIComponent(value)} : ignoré`,
+      (await page.locator('main [role="status"]').count()) === 0 &&
+        !(await page.locator('body').innerText()).includes('injected') &&
+        (await page.locator('body b').count()) === 0,
+    )
+  }
+
+  await page.goto(`${BASE}/privacy`)
+  check('/privacy : APP_URL injectée', (await page.locator('main').textContent()).includes(`Web app (${BASE})`) && !(await page.content()).includes('[APP_URL]'))
+  await page.goto(`${BASE}/data-deletion`)
+  check('/data-deletion : URL de statut avec APP_URL', (await page.locator('main code').textContent()) === `${BASE}/data-deletion/status?code=YOUR_CONFIRMATION_CODE`)
+
+  const validCode = randomBytes(16).toString('hex')
+  const statusResponse = await page.goto(`${BASE}/data-deletion/status?code=${validCode}`)
+  check('/data-deletion/status : no-store', (statusResponse.headers()['cache-control'] ?? '').includes('no-store'), statusResponse.headers()['cache-control'])
+  check('/data-deletion/status : code valide affiché', (await page.locator('main').textContent()).includes('Your request has been processed.') && (await page.locator('main code').textContent()) === validCode)
+  const invalidCode = `${validCode.slice(0, 31)}<i>zz</i>`
+  await page.goto(`${BASE}/data-deletion/status?code=${encodeURIComponent(invalidCode)}`)
+  check(
+    '/data-deletion/status : code invalide jamais réaffiché',
+    (await page.locator('main').textContent()).includes('This status link is not valid.') &&
+      !(await page.locator('body').innerText()).includes(validCode.slice(0, 31)) &&
+      (await page.locator('main code, body i').count()) === 0,
+  )
+
   // --- Protection de /search
   await page.goto(`${BASE}/search`)
   check('/search sans session redirige vers /', new URL(page.url()).pathname === '/')
@@ -120,6 +187,7 @@ async function run() {
   check("CSP : script-src 'self' 'unsafe-inline'", (headers['content-security-policy'] ?? '').includes("script-src 'self' 'unsafe-inline'"))
   check('Cache-Control no-store sur /search', (headers['cache-control'] ?? '').includes('no-store'), headers['cache-control'])
   check('username affiché', await page.getByText('@e2e_user').isVisible())
+  check('titre de /search', (await page.title()) === 'Search — Content Engine Listening', await page.title())
   await page.waitForLoadState('networkidle')
 
   const submit = page.locator('form.search-form button')
@@ -209,6 +277,8 @@ async function run() {
 
   // --- Logout depuis le vrai bouton
   await context.addCookies([await sessionCookie()])
+  await page.goto(`${BASE}/`)
+  check('accueil avec session : lien vers la recherche', await page.getByRole('link', { name: 'Continue to search as @e2e_user' }).isVisible())
   await page.goto(`${BASE}/search`)
   const logoutRequest = page.waitForRequest('**/api/auth/logout')
   await page.click('button:has-text("Log out")')
@@ -220,6 +290,7 @@ async function run() {
   check('aucune violation CSP', violations.length === 0, violations.join(' | '))
   check('aucune erreur console', consoleErrors.length === 0, consoleErrors.join(' | '))
   check('aucune ressource en erreur', failedResources.length === 0, failedResources.join(' | '))
+  check('aucune ressource externe chargée', externalRequests.length === 0, externalRequests.join(' | '))
   check('logs serveur sans jeton ni mot-clé', !serverLog.includes(FAKE_TOKEN) && !serverLog.includes(REAL_CALL_KEYWORD))
 
   await browser.close()
