@@ -1,6 +1,7 @@
 import 'server-only'
 import type { MetaCallbackFailure } from '@/lib/meta-callback'
 import type { OAuthFailureReason } from '@/lib/oauth'
+import type { UpstreamSearchErrorCode } from '@/lib/threads/errors'
 import type { ThreadsError } from '@/lib/threads/client'
 
 /**
@@ -11,6 +12,7 @@ import type { ThreadsError } from '@/lib/threads/client'
 export type LogEvent =
   | { event: 'meta_callback_rejected'; route: 'uninstall' | 'delete'; reason: MetaCallbackFailure }
   | { event: 'oauth_callback_failed'; reason: OAuthFailureReason; error?: ThreadsError }
+  | { event: 'search_failed'; code: UpstreamSearchErrorCode; error: ThreadsError }
 
 export function logWarning(event: LogEvent): void {
   // eslint-disable-next-line no-console -- unique sortie de log de l'app, limitée aux événements typés ci-dessus.

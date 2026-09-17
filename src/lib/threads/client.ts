@@ -1,5 +1,7 @@
 import 'server-only'
 import { z } from 'zod'
+import type { SearchPost } from '@/lib/search-types'
+import { SEARCH_RESULT_LIMIT, keywordSearchResponseSchema, normalizePosts } from '@/lib/threads/posts'
 
 /**
  * Domaines de la documentation Threads en vigueur (septembre 2026) :
@@ -147,4 +149,29 @@ export function fetchProfile(accessToken: string, fetchImpl: FetchLike = fetch):
     { method: 'GET', headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } },
     meResponseSchema,
   )
+}
+
+/**
+ * Recherche des posts publics récents. Jeton dans l'en-tête Authorization ;
+ * seule la première page est lue (pagination ignorée), plafonnée.
+ */
+export async function searchKeyword(
+  accessToken: string,
+  keyword: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<ThreadsResult<SearchPost[]>> {
+  const url = new URL(`${THREADS_GRAPH_ORIGIN}/${THREADS_API_VERSION}/keyword_search`)
+  url.searchParams.set('q', keyword)
+  url.searchParams.set('search_type', 'RECENT')
+  url.searchParams.set('fields', 'id,text,username,timestamp,permalink')
+  url.searchParams.set('limit', String(SEARCH_RESULT_LIMIT))
+
+  const result = await requestJson(
+    fetchImpl,
+    url.toString(),
+    { method: 'GET', headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } },
+    keywordSearchResponseSchema,
+  )
+  if (!result.ok) return result
+  return { ok: true, data: normalizePosts(result.data.data) }
 }

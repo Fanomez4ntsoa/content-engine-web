@@ -1,6 +1,7 @@
 import { z } from 'zod'
+import { KEYWORD_MAX_LENGTH } from '@/lib/search-types'
 
-export const KEYWORD_MAX_LENGTH = 100
+export { KEYWORD_MAX_LENGTH }
 
 // Catégorie Unicode Cc : C0, DEL et C1 (dont tabulation et retour à la ligne).
 const CONTROL_CHARACTER = /\p{Cc}/u

@@ -85,3 +85,13 @@ export async function destroySession(request: Request, responseHeaders: Headers,
   const session = await getIronSession(webCookies(request, responseHeaders), sessionOptions(secret))
   session.destroy()
 }
+
+/** Lecture seule depuis une Request (route handlers) : aucun Set-Cookie n'est émis. */
+export async function readSessionFromRequest(
+  request: Request,
+  secret: string,
+  now: number = Date.now(),
+): Promise<SessionData | null> {
+  const session = await getIronSession(webCookies(request, new Headers()), sessionOptions(secret))
+  return readActiveSession({ ...session }, now)
+}
