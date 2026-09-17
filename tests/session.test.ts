@@ -109,3 +109,13 @@ describe('sealSession / unsealSession', () => {
     })
   })
 })
+
+describe('createSessionData with expires_in', () => {
+  it('uses expires_in when it is shorter than one hour', () => {
+    expect(createSessionData(user, T0, 900).expiresAt).toBe(T0 + 900_000)
+  })
+
+  it('caps expires_in at one hour', () => {
+    expect(createSessionData(user, T0, 5_183_944).expiresAt).toBe(T0 + 3_600_000)
+  })
+})

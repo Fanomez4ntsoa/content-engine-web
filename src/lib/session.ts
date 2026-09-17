@@ -1,5 +1,5 @@
 import 'server-only'
-import { sealData, unsealData, type SessionOptions } from 'iron-session'
+import { getIronSession, sealData, unsealData, webCookies, type SessionOptions } from 'iron-session'
 import { z } from 'zod'
 
 /** Aligné sur la durée de vie du jeton court Threads. */
@@ -30,11 +30,18 @@ export function sessionOptions(secret: string): SessionOptions {
   }
 }
 
+/**
+ * `expiresAt` = min(maintenant + 1 h, maintenant + expires_in) : la session
+ * ne survit jamais au jeton, ni à la durée maximale fixée par l'app.
+ */
 export function createSessionData(
   user: Pick<SessionData, 'userId' | 'username' | 'accessToken'>,
   now: number = Date.now(),
+  expiresInSeconds?: number,
 ): SessionData {
-  return sessionDataSchema.parse({ ...user, expiresAt: now + SESSION_TTL_SECONDS * 1000 })
+  const lifetimeSeconds =
+    expiresInSeconds === undefined ? SESSION_TTL_SECONDS : Math.min(SESSION_TTL_SECONDS, expiresInSeconds)
+  return sessionDataSchema.parse({ ...user, expiresAt: now + lifetimeSeconds * 1000 })
 }
 
 /**
@@ -55,4 +62,26 @@ export function sealSession(data: SessionData, secret: string): Promise<string> 
 export async function unsealSession(seal: string, secret: string, now: number = Date.now()): Promise<SessionData | null> {
   const raw = await unsealData<unknown>(seal, { password: secret, ttl: SESSION_TTL_SECONDS })
   return readActiveSession(raw, now)
+}
+
+/**
+ * Remplace entièrement la session : les champs d'un éventuel cookie existant
+ * sont effacés avant l'écriture. Le Set-Cookie est ajouté à `responseHeaders`.
+ */
+export async function replaceSession(
+  request: Request,
+  responseHeaders: Headers,
+  data: SessionData,
+  secret: string,
+): Promise<void> {
+  const session = await getIronSession<Record<string, unknown>>(webCookies(request, responseHeaders), sessionOptions(secret))
+  for (const key of Object.keys(session)) delete session[key]
+  Object.assign(session, sessionDataSchema.parse(data))
+  await session.save()
+}
+
+/** Vide la session et expire le cookie (Set-Cookie ajouté à `responseHeaders`). */
+export async function destroySession(request: Request, responseHeaders: Headers, secret: string): Promise<void> {
+  const session = await getIronSession(webCookies(request, responseHeaders), sessionOptions(secret))
+  session.destroy()
 }

@@ -1,6 +1,7 @@
 import 'server-only'
 import { randomBytes } from 'node:crypto'
 import { hasMediaType, methodNotAllowed, noStoreEmpty, noStoreJson, readBodyWithLimit } from '@/lib/http'
+import { logWarning } from '@/lib/log'
 import { verifySignedRequest, type SignedRequestFailure, type SignedRequestPayload } from '@/lib/signed-request'
 
 /** Largement au-dessus d'un signed_request réel (limité à 8 Ko par verifySignedRequest). */
@@ -48,8 +49,7 @@ const FAILURE_STATUS: Record<MetaCallbackFailure, number> = {
  * le user_id ni aucun code.
  */
 export function rejectMetaCallback(route: 'uninstall' | 'delete', reason: MetaCallbackFailure): Response {
-  // eslint-disable-next-line no-console -- seul log autorisé : le motif d'échec, sans aucune donnée de la requête.
-  console.warn(`[threads/${route}] rejected: ${reason}`)
+  logWarning({ event: 'meta_callback_rejected', route, reason })
   return noStoreJson({ error: reason }, FAILURE_STATUS[reason])
 }
 

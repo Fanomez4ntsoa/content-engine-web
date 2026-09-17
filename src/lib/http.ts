@@ -9,6 +9,15 @@ export function noStoreEmpty(status: number, headers: Record<string, string> = {
   return new Response(null, { status, headers: { ...NO_STORE_HEADERS, ...headers } })
 }
 
+/** En-têtes d'une redirection 303 vers un chemin fixe de l'app, sans paramètre repris de la requête. */
+export function redirectHeaders(appUrl: string, pathWithQuery: string): Headers {
+  return new Headers({ ...NO_STORE_HEADERS, Location: new URL(pathWithQuery, appUrl).toString() })
+}
+
+export function seeOther(headers: Headers): Response {
+  return new Response(null, { status: 303, headers })
+}
+
 export function methodNotAllowed(allow: readonly string[]): Response {
   return noStoreJson({ error: 'method_not_allowed' }, 405, { Allow: allow.join(', ') })
 }

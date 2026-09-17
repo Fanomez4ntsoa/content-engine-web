@@ -117,7 +117,9 @@ describe.each(routes)('POST /api/threads/$name — rejections', ({ name, path, m
     await module.POST(formRequest(path, form({ signed_request: signedRequest })))
 
     expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn).toHaveBeenCalledWith(`[threads/${name}] rejected: bad_signature`)
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ event: 'meta_callback_rejected', route: name, reason: 'bad_signature' }),
+    )
   })
 
   it('accepts a charset parameter on the content type', async () => {
