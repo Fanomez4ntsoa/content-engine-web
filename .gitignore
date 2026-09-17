@@ -1,0 +1,22 @@
+# dépendances
+/node_modules
+
+# build Next.js
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# environnement — ne jamais committer de secrets
+.env
+.env*.local
+!.env.example
+
+# Vercel
+.vercel
+
+# divers
+.DS_Store
+npm-debug.log*
+/coverage
