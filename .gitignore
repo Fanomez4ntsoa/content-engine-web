@@ -8,9 +8,8 @@
 next-env.d.ts
 *.tsbuildinfo
 
-# environnement — ne jamais committer de secrets
-.env
-.env*.local
+# environnement — ne jamais committer de secrets (seul .env.example est suivi)
+.env*
 !.env.example
 
 # Vercel
