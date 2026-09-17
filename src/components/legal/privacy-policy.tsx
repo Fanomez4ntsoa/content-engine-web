@@ -24,8 +24,9 @@ export function PrivacyPolicy({ appUrl }: { appUrl: string }) {
 
       <h2>2. What the app does — and does not do</h2>
       <p>
-        The app searches recent <strong>public</strong> Threads posts that match a short list of French keywords related
-        to mobile phones, and displays them to the logged-in user.
+        The app searches recent <strong>public</strong> Threads posts that match keywords related to mobile phones, and
+        displays them to the logged-in user. On the web app, the keyword is typed by the logged-in user; the listening
+        worker uses a short list of French keywords.
       </p>
       <p>
         The app <strong>never</strong> publishes, replies, likes, follows or sends messages. It does not request any
@@ -92,8 +93,9 @@ export function PrivacyPolicy({ appUrl }: { appUrl: string }) {
           <strong>Meta (Threads API)</strong> — login and search;
         </li>
         <li>
-          <strong>Vercel</strong> — hosting of the web app (standard technical logs, such as IP address and request time,
-          may be kept by the host for security purposes).
+          <strong>Vercel</strong> — hosting of the web app (standard technical logs, such as IP address, request time and
+          requested URL, may be kept by the host for security purposes). A requested URL can contain the one-time
+          authorization code sent by Threads at login; this code is short-lived and can only be used once.
         </li>
       </ul>
 

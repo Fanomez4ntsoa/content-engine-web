@@ -47,7 +47,7 @@ describe('DeletionStatus', () => {
   it('shows the processed message and the code when the code is valid', () => {
     const code = createConfirmationCode()
     const html = renderToStaticMarkup(createElement(DeletionStatus, { code }))
-    expect(html).toContain('Your request has been processed.')
+    expect(html).toContain('Your request has been processed. This web app stores no data linked to your account.')
     expect(html).toContain(code)
   })
 
@@ -83,7 +83,69 @@ describe('legal pages', () => {
     const html = renderToStaticMarkup(createElement(DataDeletionInstructions, { appUrl: APP_URL }))
     expect(html).toContain(`${APP_URL}/data-deletion/status?code=YOUR_CONFIRMATION_CODE`)
     expect(html).not.toContain('[APP_URL]')
-    expect(html).toContain('Settings → Account → Website permissions')
+    expect(html).toContain('(or Settings → More settings → Website permissions)')
+    expect(html).toContain(
+      '<a href="https://www.threads.com/settings/website_permissions" target="_blank" rel="noopener noreferrer">https://www.threads.com/settings/website_permissions</a>',
+    )
+    expect(html).toContain('The listening worker is a separate tool that does not receive these notifications')
+    expect(html).not.toContain('any data linked to your account is deleted')
+  })
+
+  it('uses the validated wording in the privacy policy', () => {
+    const html = renderToStaticMarkup(createElement(PrivacyPolicy, { appUrl: APP_URL }))
+    expect(html).toContain('On the web app, the keyword is typed by the logged-in user')
+    expect(html).toContain('IP address, request time and requested URL')
+    expect(html).toContain('this code is short-lived and can only be used once')
+    expect(html).not.toContain('a short list of French keywords related to mobile phones')
+  })
+})
+
+describe('legal pages match docs/pages-legales.md', () => {
+  const doc = readFileSync(new URL('../docs/pages-legales.md', import.meta.url), 'utf8')
+
+  /** Blocs de texte (paragraphes, éléments de liste, titres) d'une page du fichier, sans syntaxe Markdown. */
+  function markdownBlocks(start: string, end: string): string[] {
+    const section = doc.slice(doc.indexOf(start) + start.length, doc.indexOf(end))
+    const blocks: string[] = []
+    for (const rawLine of section.split('\n')) {
+      if (rawLine.trim() === '' || rawLine.trim() === '---') {
+        blocks.push('')
+        continue
+      }
+      const isContinuation = /^\s{2,}\S/.test(rawLine) && blocks.length > 0 && blocks[blocks.length - 1] !== ''
+      const line = rawLine
+        .trim()
+        .replace(/^(#+|-|\d+\.)\s+/, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/\*\*|`/g, '')
+        .replace(/^\*(.*)\*$/, '$1')
+        .replaceAll('[APP_URL]', APP_URL)
+      const isNewItem = /^\s*(-|\d+\.)\s/.test(rawLine) || /^#/.test(rawLine.trim())
+      if (isContinuation && !isNewItem) blocks[blocks.length - 1] += ` ${line}`
+      else blocks.push(line)
+    }
+    return blocks.filter(Boolean)
+  }
+
+  const renderedText = (html: string) =>
+    html
+      .replace(/<\/?(article|h1|h2|p|ul|ol|li)[^>]*>/g, ' ')
+      .replace(/<[^>]+>/g, '')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#x27;', "'")
+      .replaceAll('&amp;', '&')
+      .replace(/\s+/g, ' ')
+
+  const normalize = (text: string) => text.replace(/\s+/g, ' ').trim()
+
+  it.each([
+    ['privacy', '## PAGE 1 — `/privacy`', '## PAGE 2', () => createElement(PrivacyPolicy, { appUrl: APP_URL })],
+    ['data deletion', '## PAGE 2 — `/data-deletion`', '## Notes pour la spec', () => createElement(DataDeletionInstructions, { appUrl: APP_URL })],
+  ])('renders every block of the %s page', (_label, start, end, element) => {
+    const text = normalize(renderedText(renderToStaticMarkup(element())))
+    const blocks = markdownBlocks(start, end)
+    expect(blocks.length).toBeGreaterThan(10)
+    for (const block of blocks) expect(text).toContain(normalize(block))
   })
 })
 

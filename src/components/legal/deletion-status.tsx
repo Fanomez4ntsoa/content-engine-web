@@ -18,7 +18,7 @@ export function DeletionStatus({ code }: { code: unknown }) {
   return (
     <article className="prose">
       <h1>Deletion request status</h1>
-      <p className="notice">Your request has been processed. No data is stored.</p>
+      <p className="notice">Your request has been processed. This web app stores no data linked to your account.</p>
       <p>
         Confirmation code: <code>{code}</code>
       </p>

@@ -25,7 +25,7 @@ Contact: **voary.fanomezantsoa+threadsapp@gmail.com**
 
 ## 2. What the app does — and does not do
 
-The app searches recent **public** Threads posts that match a short list of French keywords related to mobile phones, and displays them to the logged-in user.
+The app searches recent **public** Threads posts that match keywords related to mobile phones, and displays them to the logged-in user. On the web app, the keyword is typed by the logged-in user; the listening worker uses a short list of French keywords.
 
 The app **never** publishes, replies, likes, follows or sends messages. It does not request any permission that would allow it to do so. Every reply is written and posted by a person, by hand, directly on Threads.
 
@@ -56,7 +56,7 @@ Data is **never sold, rented or shared** with third parties, and is never used f
 
 The app relies on the following services, strictly to function:
 - **Meta (Threads API)** — login and search;
-- **Vercel** — hosting of the web app (standard technical logs, such as IP address and request time, may be kept by the host for security purposes).
+- **Vercel** — hosting of the web app (standard technical logs, such as IP address, request time and requested URL, may be kept by the host for security purposes). A requested URL can contain the one-time authorization code sent by Threads at login; this code is short-lived and can only be used once.
 
 ## 6. Your rights
 
@@ -84,11 +84,11 @@ Content Engine Listening does not permanently store any personal data about the 
 
 ## Remove the app's access
 
-1. Open Threads (app or website) and go to **Settings → Account → Website permissions**.
-2. Open the **Active** tab.
-3. Select **Content Engine Listening** and tap **Remove**.
-
-The app's access token is immediately invalidated and no further search can be made with your account.
+1. Open Threads and go to your website permissions:
+   [https://www.threads.com/settings/website_permissions](https://www.threads.com/settings/website_permissions)
+   (or Settings → More settings → Website permissions).
+2. In the **Active** tab, find **Content Engine Listening**.
+3. Tap **Remove**.
 
 ## Ask for deletion of any remaining data
 
@@ -100,7 +100,7 @@ with the subject **"Data deletion request"** and your Threads username. Your dat
 
 ## Automatic deletion
 
-When you remove the app from your Threads settings, Meta notifies the app automatically, and any data linked to your account is deleted. You can check the status of a request at:
+When you remove the app from your Threads settings, Meta notifies the web app automatically. The web app stores no data linked to your account, so there is nothing else to delete. The listening worker is a separate tool that does not receive these notifications and is not connected to the web app: public posts it collects are deleted automatically after 7 days, or sooner on request at the address above. You can check the status of a request at:
 
 `[APP_URL]/data-deletion/status?code=YOUR_CONFIRMATION_CODE`
 
@@ -110,6 +110,6 @@ When you remove the app from your Threads settings, Meta notifies the app automa
 
 - **Delete Callback URL** (`/api/threads/delete`) : Meta envoie un `signed_request` en POST. Il faut vérifier la signature avec le Threads App Secret, puis répondre en JSON : `{ "url": "[APP_URL]/data-deletion/status?code=XXX", "confirmation_code": "XXX" }`.
 - **Uninstall Callback URL** (`/api/threads/uninstall`) : même `signed_request`, il suffit de vérifier et de répondre `200`.
-- La page de statut peut rester simple : « Your request has been processed. No data is stored. »
+- La page de statut peut rester simple : « Your request has been processed. This web app stores no data linked to your account. »
 - Le texte promet une session chiffrée et aucun stockage de posts côté web : l'implémentation doit s'y tenir exactement.
 - Le collecteur local doit réellement purger les posts de plus de 7 jours (tâche de nettoyage à chaque cycle).

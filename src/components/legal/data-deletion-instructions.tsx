@@ -1,5 +1,7 @@
 import { CONTACT_EMAIL } from './contact'
 
+export const THREADS_WEBSITE_PERMISSIONS_URL = 'https://www.threads.com/settings/website_permissions'
+
 /** Texte de docs/pages-legales.md (page 2), `[APP_URL]` remplacé par l'URL de l'app. */
 export function DataDeletionInstructions({ appUrl }: { appUrl: string }) {
   return (
@@ -13,16 +15,19 @@ export function DataDeletionInstructions({ appUrl }: { appUrl: string }) {
       <h2>Remove the app&apos;s access</h2>
       <ol>
         <li>
-          Open Threads (app or website) and go to <strong>Settings → Account → Website permissions</strong>.
+          Open Threads and go to your website permissions:{' '}
+          <a href={THREADS_WEBSITE_PERMISSIONS_URL} target="_blank" rel="noopener noreferrer">
+            {THREADS_WEBSITE_PERMISSIONS_URL}
+          </a>{' '}
+          (or Settings → More settings → Website permissions).
         </li>
         <li>
-          Open the <strong>Active</strong> tab.
+          In the <strong>Active</strong> tab, find <strong>Content Engine Listening</strong>.
         </li>
         <li>
-          Select <strong>Content Engine Listening</strong> and tap <strong>Remove</strong>.
+          Tap <strong>Remove</strong>.
         </li>
       </ol>
-      <p>The app&apos;s access token is immediately invalidated and no further search can be made with your account.</p>
 
       <h2>Ask for deletion of any remaining data</h2>
       <p>
@@ -39,8 +44,10 @@ export function DataDeletionInstructions({ appUrl }: { appUrl: string }) {
 
       <h2>Automatic deletion</h2>
       <p>
-        When you remove the app from your Threads settings, Meta notifies the app automatically, and any data linked to
-        your account is deleted. You can check the status of a request at:
+        When you remove the app from your Threads settings, Meta notifies the web app automatically. The web app stores no
+        data linked to your account, so there is nothing else to delete. The listening worker is a separate tool that does
+        not receive these notifications and is not connected to the web app: public posts it collects are deleted
+        automatically after 7 days, or sooner on request at the address above. You can check the status of a request at:
       </p>
       <p>
         <code>{appUrl}/data-deletion/status?code=YOUR_CONFIRMATION_CODE</code>
