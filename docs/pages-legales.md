@@ -13,7 +13,7 @@
 
 # Privacy Policy — Content Engine Listening
 
-*Last updated: September 2026*
+*Last updated: October 2026*
 
 ## 1. Who I am
 
@@ -25,7 +25,7 @@ Contact: **voary.fanomezantsoa+threadsapp@gmail.com**
 
 ## 2. What the app does — and does not do
 
-The app searches recent **public** Threads posts that match keywords related to mobile phones, and displays them to the logged-in user. On the web app, the keyword is typed by the logged-in user; the listening worker uses a short list of French keywords.
+The app searches recent **public** Threads posts that match a keyword related to mobile phones, and displays them to the logged-in user. The keyword is typed by the logged-in user, one search at a time; the app does not run any automatic or scheduled search.
 
 The app **never** publishes, replies, likes, follows or sends messages. It does not request any permission that would allow it to do so. Every reply is written and posted by a person, by hand, directly on Threads.
 
@@ -44,11 +44,8 @@ The app does **not** collect your email address, your password, your private mes
 **Web app ([APP_URL])**
 - Your user ID, username and access token are kept only in an encrypted session cookie, for the duration of your session. They are removed when you log out or when the session expires.
 - Search results are displayed on screen and are **not stored**.
-
-**Listening worker (run locally by the developer)**
-- A background tool, run on the developer's own computer, uses the developer's own Threads account to run the same keyword searches.
-- Matching public posts are stored locally for **7 days maximum**, only to avoid showing the same post twice, then automatically deleted.
-- Posts may be analyzed by a language model running **locally** on the same computer, to estimate their relevance. No data is sent to an external AI service.
+- The keywords you type are not recorded.
+- Nothing else is kept: the app has no database, keeps no copy of Threads posts and does not analyze them with any AI model.
 
 ## 5. Sharing
 
@@ -92,7 +89,7 @@ Content Engine Listening does not permanently store any personal data about the 
 
 ## Ask for deletion of any remaining data
 
-If you believe the app holds data about you (for example, one of your public posts collected in the last 7 days), send an email to:
+If you believe the app holds data about you, or have a question about your data, send an email to:
 
 **voary.fanomezantsoa+threadsapp@gmail.com**
 
@@ -100,7 +97,7 @@ with the subject **"Data deletion request"** and your Threads username. Your dat
 
 ## Automatic deletion
 
-When you remove the app from your Threads settings, Meta notifies the web app automatically. The web app stores no data linked to your account, so there is nothing else to delete. The listening worker is a separate tool that does not receive these notifications and is not connected to the web app: public posts it collects are deleted automatically after 7 days, or sooner on request at the address above. You can check the status of a request at:
+When you remove the app from your Threads settings, Meta notifies the web app automatically. The app stores no data linked to your account and keeps no Threads posts, so there is nothing else to delete. You can check the status of a request at:
 
 `[APP_URL]/data-deletion/status?code=YOUR_CONFIRMATION_CODE`
 
@@ -112,4 +109,4 @@ When you remove the app from your Threads settings, Meta notifies the web app au
 - **Uninstall Callback URL** (`/api/threads/uninstall`) : même `signed_request`, il suffit de vérifier et de répondre `200`.
 - La page de statut peut rester simple : « Your request has been processed. This web app stores no data linked to your account. »
 - Le texte promet une session chiffrée et aucun stockage de posts côté web : l'implémentation doit s'y tenir exactement.
-- Le collecteur local doit réellement purger les posts de plus de 7 jours (tâche de nettoyage à chaque cycle).
+- Aucun collecteur local n'existe aujourd'hui. Si un outil de collecte automatique est ajouté, mettre à jour la politique (sections 2 et 4) et la page de suppression **avant** de le lancer, puis ici et dans les composants.

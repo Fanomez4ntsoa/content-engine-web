@@ -6,7 +6,7 @@ export function PrivacyPolicy({ appUrl }: { appUrl: string }) {
     <article className="prose">
       <h1>Privacy Policy — Content Engine Listening</h1>
       <p>
-        <em>Last updated: September 2026</em>
+        <em>Last updated: October 2026</em>
       </p>
 
       <h2>1. Who I am</h2>
@@ -24,9 +24,9 @@ export function PrivacyPolicy({ appUrl }: { appUrl: string }) {
 
       <h2>2. What the app does — and does not do</h2>
       <p>
-        The app searches recent <strong>public</strong> Threads posts that match keywords related to mobile phones, and
-        displays them to the logged-in user. On the web app, the keyword is typed by the logged-in user; the listening
-        worker uses a short list of French keywords.
+        The app searches recent <strong>public</strong> Threads posts that match a keyword related to mobile phones, and
+        displays them to the logged-in user. The keyword is typed by the logged-in user, one search at a time; the app
+        does not run any automatic or scheduled search.
       </p>
       <p>
         The app <strong>never</strong> publishes, replies, likes, follows or sends messages. It does not request any
@@ -63,22 +63,10 @@ export function PrivacyPolicy({ appUrl }: { appUrl: string }) {
         <li>
           Search results are displayed on screen and are <strong>not stored</strong>.
         </li>
-      </ul>
-      <p>
-        <strong>Listening worker (run locally by the developer)</strong>
-      </p>
-      <ul>
+        <li>The keywords you type are not recorded.</li>
         <li>
-          A background tool, run on the developer&apos;s own computer, uses the developer&apos;s own Threads account to
-          run the same keyword searches.
-        </li>
-        <li>
-          Matching public posts are stored locally for <strong>7 days maximum</strong>, only to avoid showing the same post
-          twice, then automatically deleted.
-        </li>
-        <li>
-          Posts may be analyzed by a language model running <strong>locally</strong> on the same computer, to estimate their
-          relevance. No data is sent to an external AI service.
+          Nothing else is kept: the app has no database, keeps no copy of Threads posts and does not analyze them with any
+          AI model.
         </li>
       </ul>
 

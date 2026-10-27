@@ -87,13 +87,19 @@ describe('legal pages', () => {
     expect(html).toContain(
       '<a href="https://www.threads.com/settings/website_permissions" target="_blank" rel="noopener noreferrer">https://www.threads.com/settings/website_permissions</a>',
     )
-    expect(html).toContain('The listening worker is a separate tool that does not receive these notifications')
+    expect(html).toContain('keeps no Threads posts, so there is nothing else to delete')
     expect(html).not.toContain('any data linked to your account is deleted')
+    expect(html).not.toContain('listening worker')
+    expect(html).not.toContain('7 days')
   })
 
   it('uses the validated wording in the privacy policy', () => {
     const html = renderToStaticMarkup(createElement(PrivacyPolicy, { appUrl: APP_URL }))
-    expect(html).toContain('On the web app, the keyword is typed by the logged-in user')
+    expect(html).toContain('the app does not run any automatic or scheduled search')
+    expect(html).toContain('the app has no database, keeps no copy of Threads posts')
+    expect(html).not.toContain('Listening worker')
+    expect(html).not.toContain('7 days')
+    expect(html).not.toContain('language model')
     expect(html).toContain('IP address, request time and requested URL')
     expect(html).toContain('this code is short-lived and can only be used once')
     expect(html).not.toContain('a short list of French keywords related to mobile phones')

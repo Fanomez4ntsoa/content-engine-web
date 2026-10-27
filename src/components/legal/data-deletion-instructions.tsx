@@ -31,8 +31,7 @@ export function DataDeletionInstructions({ appUrl }: { appUrl: string }) {
 
       <h2>Ask for deletion of any remaining data</h2>
       <p>
-        If you believe the app holds data about you (for example, one of your public posts collected in the last 7 days),
-        send an email to:
+        If you believe the app holds data about you, or have a question about your data, send an email to:
       </p>
       <p>
         <strong>{CONTACT_EMAIL}</strong>
@@ -44,10 +43,9 @@ export function DataDeletionInstructions({ appUrl }: { appUrl: string }) {
 
       <h2>Automatic deletion</h2>
       <p>
-        When you remove the app from your Threads settings, Meta notifies the web app automatically. The web app stores no
-        data linked to your account, so there is nothing else to delete. The listening worker is a separate tool that does
-        not receive these notifications and is not connected to the web app: public posts it collects are deleted
-        automatically after 7 days, or sooner on request at the address above. You can check the status of a request at:
+        When you remove the app from your Threads settings, Meta notifies the web app automatically. The app stores no data
+        linked to your account and keeps no Threads posts, so there is nothing else to delete. You can check the status of a
+        request at:
       </p>
       <p>
         <code>{appUrl}/data-deletion/status?code=YOUR_CONFIRMATION_CODE</code>
